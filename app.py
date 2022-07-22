@@ -4,12 +4,28 @@ from flask import Flask, render_template, redirect, url_for, request
 from flask_sqlalchemy import SQLAlchemy
 
 from ddtrace import tracer
-from ddtrace import config, patch_all
 
+
+
+from ddtrace import config, patch_all
+from ddtrace.runtime import RuntimeMetrics
+
+RuntimeMetrics.enable()
+config.flask['service_name'] = "app"
 config.env = "dev"      # the environment the application is in
 config.service = "app"  # name of your application
 config.version = "0.1"  # version of your application
 patch_all()
+
+# # Network sockets
+# tracer.configure(
+#     https=False,
+#     hostname="DESKTOP-FGTBJJU",
+#     port=8125,
+
+# )
+
+
 
 
 app = Flask(__name__)
@@ -51,6 +67,7 @@ def redirect_to_home():
 
 
 @app.route("/home", methods=["GET", "POST"])
+@tracer.wrap("flask.request", service="flask", resource="GET /home", span_type="web")
 def home():
     all_notebooks = Notebook.query.all()
 
@@ -237,4 +254,4 @@ def delete_section(notebook_id, note_id, section_id):
 
 
 if __name__ == "__main__":
-    app.run(debug=True)
+   app.run(host='127.0.0.1',port=8000, debug=True)
