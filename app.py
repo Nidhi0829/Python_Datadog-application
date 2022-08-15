@@ -2,6 +2,9 @@ import datetime
 import hashlib
 from flask import Flask, render_template, redirect, url_for, request
 from flask_sqlalchemy import SQLAlchemy
+from jaeger_client import Config
+from flask_opentracing import FlaskTracing
+
 
 from ddtrace import tracer
 
@@ -9,6 +12,30 @@ from ddtrace import tracer
 
 from ddtrace import config, patch_all
 from ddtrace.runtime import RuntimeMetrics
+
+# from opentelemetry.exporter import jaeger
+# from opentelemetry import trace
+# from opentelemetry.exporter.jaeger.thrift import JaegerExporter
+# from opentelemetry.sdk.resources import SERVICE_NAME, Resource
+# from opentelemetry.sdk.trace import TracerProvider
+# from opentelemetry.sdk.trace.export import BatchSpanProcessor
+
+# resource = Resource(attributes={
+#    SERVICE_NAME: "app"
+# })
+
+# jaeger_exporter = JaegerExporter(
+#    agent_host_name="localhost",
+#    agent_port=6831,
+#    collector_endpoint='http://localhost:16686/api/traces?format=jaeger.thrift',
+# )
+
+
+
+# provider = TracerProvider(resource=resource)
+# processor = BatchSpanProcessor(jaeger_exporter)
+# provider.add_span_processor(processor)
+# trace.set_tracer_provider(provider)
 
 RuntimeMetrics.enable()
 config.flask['service_name'] = "app"
@@ -20,7 +47,7 @@ patch_all()
 # # Network sockets
 # tracer.configure(
 #     https=False,
-#     hostname="DESKTOP-FGTBJJU",
+#     hostname="Niddhi",
 #     port=8125,
 
 # )
@@ -29,6 +56,17 @@ patch_all()
 
 
 app = Flask(__name__)
+config = Config(
+    config={
+        'sampler':
+        {'type': 'const',
+         'param': 1},
+        'logging': True,
+        'reporter_batch_size': 1,}, 
+        service_name="notebook-service")
+jaeger_tracer = config.initialize_tracer()
+tracing = FlaskTracing(jaeger_tracer, True, app)
+
 app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///database.db"
 
 db = SQLAlchemy(app)
